@@ -11,6 +11,7 @@ import pytc
 import sys
 from hizukereader import Parser
 import re
+import config
 
 split = re.compile(",").split
 
@@ -101,18 +102,22 @@ class PLDAFormatter(object):
         for word in f:
             self.worddict[word.rstrip("\n")] = 1
     
-    def format(self, lst):
+    def format(self, words):
         ret = []
-        for words in lst:
-            d = {}
-            for w in split(words):
-                if w != "" and w in self.worddict:
-                    if w in d:
-                        d[w] += 1
-                    else:
-                        d[w] = 1
-            ret.append(' '.join([str(k).replace(" ", "_") + ' ' + str(n) for k, n in d.items()]))
-        return ret
+        d = {}
+        def uni(s):
+            if type(s) == unicode:
+                return s.encode("utf8")
+            else:
+                return s
+        words = map(uni, words)
+        for w in words:
+            if w != "" and w in self.worddict:
+                if w in d:
+                    d[w] += 1
+                else:
+                    d[w] = 1
+        return ' '.join([str(k).replace(" ", "_") + ' ' + str(n) for k, n in d.items()])
     
     def format_to_file(self, input, output):
         pass
@@ -135,8 +140,12 @@ def view(dbname):
     finally:
         db.close()
 
-def get_topic_from_server(bow, server="http://localhost:5000"):
-    return urllib2("%s/%s" % (server, urllib.quote(bow))).read().split(" ")
+def get_topic_from_server(bow, server=config.lda_server):
+    return map(float, urllib2.urlopen("%s/%s" % (server, urllib.quote(bow))).read().split(" "))
+
+def get_topic_from_server_p(bow, server=config.lda_server_post):
+    return map(float, urllib2.urlopen(server, urllib.urlencode({"q": urllib.quote(bow)})).read().split(" "))
+
 if __name__ == '__main__':
     #flatten("wikidump/all2.txt", "wikidump/all.flatten2.txt")
     #count("wikidump/all.flatten2.txt", "wikipedia.db")

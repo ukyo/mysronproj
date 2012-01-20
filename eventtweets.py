@@ -22,7 +22,7 @@ def read(x, n, result_type):
     
     def get(query):
         today = datetime.datetime.today()
-        for i in range(1, 15):
+        for i in range(1, 10):
             try:
                 r = api.search(q=query,
                                page=i,
@@ -48,8 +48,10 @@ def read_recent(x, n):
     return read(x, n, "recent")
 
 def read_popular(x, n):
-    return read(x, n, "popular")
+    return read(x, n, "mixed")
 
 if __name__ == '__main__':
-    tweets = read_recent(1, 1)
-    print json.dumps(tweets)
+    import sys
+    for i in range(5):
+        tweets = read(1, 5, sys.argv[1])
+        print json.dumps(tweets)

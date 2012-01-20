@@ -25,33 +25,43 @@ default_normalize_methods = [
 ]
 
 def gen_sub(pattern, repl):
+    """置換関数を生成する関数。try,exceptのところは正直すまん。"""
     p = re.compile(pattern)
-    return lambda s: p.sub(repl, s)
+    def fn(s):
+        try:
+            return p.sub(repl, s)
+        except:
+            return s
+    return fn
 
-br2nl = gen_sub('<br(\s*(\"[^\"]*\"|[^>])*)?>[\n\r]?', '\n')
-p2nl = gen_sub('<\/?p(\s+(\"[^\"]*\"|[^>])*)?>[\n\r]?', '\n')
-strip_tag = gen_sub('<(\"[^\"]*\"|[^>])*>', '')
-strip_entity = gen_sub('&#?[a-zA-Z0-9]+;?', '')
-strip_tag = gen_sub('[\n\r]', '')
-strip_single_tag = gen_sub('([\n\r]?)([\n\r]+)', '\n')
+br2nl = gen_sub(u'<br(\s*(\"[^\"]*\"|[^>])*)?>[\n\r]?', u'\n')
+p2nl = gen_sub(u'<\/?p(\s+(\"[^\"]*\"|[^>])*)?>[\n\r]?', u'\n')
+strip_tag = gen_sub(u'<(\"[^\"]*\"|[^>])*>', u'')
+strip_entity = gen_sub(u'&#?[a-zA-Z0-9]+;?', u'')
+strip_tag = gen_sub(u'[\n\r]', '')
+strip_single_tag = gen_sub('([\n\r]?)([\n\r]+)', u'\n')
 wavetilde2long = gen_sub(u'[\u301c\uff5e]', u'\u30fc')
 fullminus2long = gen_sub(u'\u2212', u'\u30fc')
 dashes2long = gen_sub(u'[\u2012\u2013\u2014\u2015\u2053\u301c\u3030]', u'\u30fc')
 drawing_lines2long = gen_sub(u'[\u2500\u2501\u254C\u254D\u2574\u2576\u2578\u257A]', u'\u30fc')
 unify_long_repeats = gen_sub(u'\u30fc{2,}', u'\u30fc')
-unify_whitespace = gen_sub('\s+', ' ')
-renzoku = gen_sub(r'(.)\1{2,}', r'\1\1')
-twitter_http = gen_sub("https?://[A-Za-z0-9\'~+\-=_.,/%\?!;:@#\*&\(\)]+",'')
-twitter_reply = gen_sub('(@|#)[a-zA-Z0-9]+', '')
+unify_whitespace = gen_sub(u'\s+', ' ')
+renzoku = gen_sub(ur'(.)\1{2,}', ur'\1\1')
+twitter_http = gen_sub(u"http:\/\/t\.co\/[a-zA-Z0-9]+", u'')
+twitter_reply = gen_sub(u'(@|#)[a-zA-Z0-9]+', u'')
 
 class TextNormalizer(object):
 
     def __init__(self, *normalize_methods):
+#        self.normalize_methods = []
         self.normalize_methods = normalize_methods if len(normalize_methods) else default_normalize_methods
     
     def normalize(self, s):
         for method in self.normalize_methods:
-            s = getattr(self, method, lambda x: x)(s)
+            try:
+                s = getattr(self, method, lambda x: x)(s)
+            except:
+                pass
         return s
     
     def decode_entities(self, s):

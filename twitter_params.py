@@ -5,7 +5,7 @@ import urllib
 import datetime
 
 three_days_jp = urllib.quote_plus('(本日+OR+今日+OR+明日+OR+明後日)')
-event_jp = urllib.quote_plus('(発表+OR+開催+OR+実施+OR+参加+OR+受付+OR+会場+OR+開場+OR+申し込み+OR+展示+OR+開演+OR+主催)')
+event_jp = urllib.quote_plus('(発表+OR+開催+OR+実施+OR+参加+OR+受付+OR+会場+OR+開場+OR+申し込み)')
 
 def days_from_today(n):
     '''generate paramaters n days from today.'''

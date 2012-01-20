@@ -15,7 +15,7 @@ http://localhost:5000/python%201java%202
 import os
 import subprocess
 import urllib
-from flask import Flask
+from flask import Flask, request
 
 app = Flask(__name__)
 
@@ -43,8 +43,16 @@ p = subprocess.Popen(cmdline,
                      stderr=subprocess.STDOUT,
                      close_fds=True)
 
+@app.route("/api", methods=['POST'])
+def topic():
+    request.method
+    v = urllib.unquote(request.form.get('q'))
+    bag_of_words = v.encode("utf8")
+    p.stdin.write(bag_of_words+"\n")
+    line = p.stdout.readline()
+    return line.rstrip("\n")
 
-@app.route("/<bag_of_words>")
+@app.route("/api/topic/<bag_of_words>")
 def get_topic(bag_of_words):
     bag_of_words = bag_of_words.encode("utf8")
     p.stdin.write(bag_of_words+"\n")

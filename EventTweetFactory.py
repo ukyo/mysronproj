@@ -24,8 +24,8 @@ import pldautils
 pattern_year = re.compile(u"([1-9][0-9]{3,})[\/年][0-9]")
 p_date = re.compile(u"[1-9]{1,2}[\/月][1-9]{1,2}[\/日]")
 date_split = re.compile(u"[\/月日]").split
-p_event = re.compile("本日|今日|明日|明後日|発表|開催|実施|参加|受付|会場|開場|申し込み|展示|開演|主催")
-p_youbi = re.compile("\([月火水木金土日]\)")
+p_event = re.compile("^.*(本日|今日|明日|明後日|募集|予約|歓迎|発売|発表|開催|実施|参加|受付|会場|開場|申し込み|展示|開演|主催).*$")
+p_youbi = re.compile(u"\([月火水木金土日]\)")
 normalizer = TextNormalizer()
 tv_list = [
     u"nhk",
@@ -48,14 +48,24 @@ class EventTweetTokenizer(MeCabParser.Parser):
     
     def tokenize(self, s):
         """トークン化する"""
-        s = self.delete_event_expr(s)
-        return self.parse(s)
+        s = p_date.sub('', s)
+        s = p_youbi.sub('', s)
+        tokens = self.parse(s)
+        t = [n.surface for n in tokens]
+        body = []
+        for token in tokens:
+            if not p_event.match(token.surface):
+                body.append(token.surface)
+            elif not "固有名詞,地域" in token.feature:
+                body.append(token.surface)
+        
+        return tokens, body
     
     def delete_event_expr(self, s):
         """イベントに関係する表現を削除する"""
-        s = p_date.sub('', s)
+        
         s = p_event.sub('', s)
-        s = p_youbi.sub('', s)
+        
         return s
     
     def parse(self, s):
@@ -68,6 +78,21 @@ class EventTweetTokenizer(MeCabParser.Parser):
                 #if to_unicode:
                 #    surface = surface.decode(self.encoding)
                 ret.append(node)
+            node = node.next
+        return ret
+
+
+class TweetTokenizer(MeCabParser.Parser):
+    def parse(self, s):
+        """ちゃんとした名詞のみを抜き出す"""
+        node = self.node(s)
+        ret = []
+        while node:
+            surface = node.surface
+            if surface != "" and "名詞" in node.feature and not "名詞,数" in node.feature and not "非自立" in node.feature:
+                #if to_unicode:
+                #    surface = surface.decode(self.encoding)
+                ret.append(surface)
             node = node.next
         return ret
 
@@ -151,17 +176,28 @@ class EventTweetFactory(object):
     
     def get_event_tweets(self, tweets):
         """通常のtweetにイベント情報を付加"""
-        if type(tweets).__name__ != "list":
+        if type(tweets) != list:
             tweets = [tweets]
         for tweet in tweets:
-            tokens = self.tokenizer.tokenize(tweet['text'])
-            bag_of_words = self.plda_formatter.format(tokens)
-            tweet['event_info'] = {
-                "date": self._date(tweet),
-                "place": self._place(tokens),
-                "tokens": tokens,
-                "topic": pldautils.get_topic_from_server(bag_of_words)
-            }
+            if not self.rule_base.is_event(tweet['text']):
+                continue
+            tokens, body = self.tokenizer.tokenize(tweet['text'])
+            words = map(lambda node: node.surface, tokens)
+            bag_of_words = self.plda_formatter.format(body)
+            if not "event_info" in tweet:
+                tweet['event_info'] = {
+                    "date": "",#self._date(tweet),
+                    "place": self._place(tokens),
+                    "body": body,
+                    "tokens": map(lambda n: {"word":n.surface, "feature":n.feature}, tokens),
+                    "topic": pldautils.get_topic_from_server_p(bag_of_words)
+                }
+            else:
+                info = tweet["event_info"]
+                info["body"] = body
+                info["tokens"] = map(lambda n: {"word":n.surface, "feature":n.feature}, tokens)
+                info["topic"] = pldautils.get_topic_from_server_p(bag_of_words)
+            yield tweet
         
     def _place(self, tokens):
         """tweet内の場所情報を取得"""
@@ -174,7 +210,7 @@ class EventTweetFactory(object):
             soup = BS(u.read())
             coord = soup.find("coordinates")
             if coord is not None:
-                return map(float, coord.text.split())
+                return map(float, coord.text.split(","))
         return None
     
     def _date(self, tweet):
@@ -190,3 +226,29 @@ class EventTweetFactory(object):
                 "d": int(dd[1])
             })
         return event_dates
+
+
+if __name__ == "__main__":
+    import config
+    import json
+    import sys
+    fty = EventTweetFactory(config.wordfile)
+    tokenizer = TweetTokenizer()
+    f = open(sys.argv[1], "r")
+    if sys.argv[2] == "1":
+        recent = [json.loads(s) for s in f]
+    elif sys.argv[2] == "2":
+        recent = []
+        [recent.extend(json.loads(t)) for t in f]
+    elif sys.argv[2] == "3":
+        formatter = pldautils.PLDAFormatter(config.wordfile)
+        for s in f:
+            status = json.loads(s)
+            tokens = tokenizer.parse(status["text"])
+            status["topic"] = pldautils.get_topic_from_server_p(formatter.format(tokens))
+            print status
+    else:
+        pass
+#        recent = json.load(f)
+#    for tweet in fty.get_event_tweets(recent):
+#        print json.dumps(tweet)

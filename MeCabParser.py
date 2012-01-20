@@ -15,9 +15,13 @@ class Parser(object):
         self.normalizer = TextNormalizer()
     
     def node(self, s):
-        if type(s) == str:
-            s = s.decode(self.encoding)
-        s = self.normalizer.normalize(s).encode(self.encoding)
+        try:
+            if type(s) == str:
+                s = s.decode(self.encoding)
+            s = self.normalizer.normalize(s)
+            s = s.encode(self.encoding)
+        except:
+            s = ""
         return self.tagger.parseToNode(s)
     
     def parse(self, s, to_unicode=False):

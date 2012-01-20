@@ -1,6 +1,10 @@
-#Fri Jan 20 10:16:43 JST 2012
+#Fri Jan 20 18:29:22 JST 2012
 eclipse.preferences.version=1
 encoding/EventTweetFactory.py=utf8
+encoding/EventTweetRecommender.py=utf8
 encoding/LDAServer.py=utf8
+encoding/NormalizeText.py=utf8
 encoding/UserModelFactory.py=utf8
+encoding/eventtweets.py=utf8
 encoding/pldautils.py=utf8
+encoding/twitter_params.py=utf8

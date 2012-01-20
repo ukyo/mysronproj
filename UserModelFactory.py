@@ -2,15 +2,12 @@
 #coding: utf8
 
 import sys
-import pytc
 from tinytwitter import tinytwitter as tw
-import time
-import os
 import MeCabParser
 import datetime
 from config import *
 import json
-from pldautils import PLDAFormatter
+from pldautils import PLDAFormatter, get_topic_from_server
 import MeCabParser
 
 
@@ -45,6 +42,7 @@ class UserModelFactory(object):
     
     def get_user_model(self, user):
         """ユーザーモデルの生成"""
+        self.log = open("log_"+user+".json", "w")
         lists = self.load_lists(user)
         tweets = []
         profiles = []
@@ -52,7 +50,9 @@ class UserModelFactory(object):
             list_id = lst["id"]
             #tweets.extend(self.load_list_timeline(list_id))
             profiles.extend(self.load_member_profile(list_id))
-        profiles_ = [self.parser.parse(profile) for profile in profiles]
+        profiles_ = []
+        for profile in profiles:
+            profiles_.extend(self.parser.parse(profile))
         #tweets_ = [self.parser.parse(tweet) for tweet in tweets]
         #profiles_.extend(tweets)
         bag_of_words = self.formatter.format(profiles_)
@@ -62,7 +62,7 @@ class UserModelFactory(object):
         }
     
     def get_topic(self, bag_of_words):
-        return ""
+        return get_topic_from_server(bag_of_words)
     
     def load_lists(self, user):
         """twitterからlistを読み込む"""
@@ -95,13 +95,13 @@ class UserModelFactory(object):
         next_cursor = -1
         profiles = []
         i = 0
-        while next_cursor and i < 5:
+        while next_cursor and i < 3:
             try:
-                r = api.lists__members(list_id=list_id, next_cursor=next_cursor)
+                r = api.lists__members(list_id=list_id, cursor=next_cursor)
                 next_cursor = r["next_cursor"]
-                #backup
-                backup.write(json.dumps(r)+"\n")
-                backup.flush()
+                #log
+                self.log.write(json.dumps(r)+"\n")
+                self.log.flush()
                 profiles.extend([user["description"] for user in r["users"]])
             except:
                 pass
@@ -110,6 +110,8 @@ class UserModelFactory(object):
 
 
 if __name__ == '__main__':
-    user_model_factory = UserModelFactory(sys.argv[1])
-    user_model = user_model_factory.get_user_model("ukyo")
+    import config
+    import sys
+    user_model_factory = UserModelFactory(config.wordfile)
+    user_model = user_model_factory.get_user_model(sys.argv[1])
     print json.dumps(user_model)
