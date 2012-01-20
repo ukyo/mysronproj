@@ -6,7 +6,6 @@ import pytc
 import twitter_params as tp
 from tinytwitter import tinytwitter as tw
 import time
-import tinytwitter
 import os
 import MeCabParser
 import datetime

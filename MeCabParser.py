@@ -14,11 +14,14 @@ class Parser(object):
         self.tagger = MeCab.Tagger(self.mecab_option)
         self.normalizer = TextNormalizer()
     
-    def parse(self, s, to_unicode=False):
+    def node(self, s):
         if type(s) == str:
             s = s.decode(self.encoding)
         s = self.normalizer.normalize(s).encode(self.encoding)
-        node = self.tagger.parseToNode(s)
+        return self.tagger.parseToNode(s)
+    
+    def parse(self, s, to_unicode=False):
+        node = self.node(s)
         ret = []
         while node:
             surface = node.surface

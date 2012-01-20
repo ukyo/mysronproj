@@ -34,7 +34,7 @@ infer: infer.cc cmd_flags.o common.o document.o model.o accumulative_model.o sam
 	$(CC) $(CFLAGS) infer.cc cmd_flags.o common.o document.o model.o accumulative_model.o sampler.o -o infer
 
 myinfer: myinfer.cc cmd_flags.o common.o document.o model.o accumulative_model.o sampler.o
-	$(CC) $(CFLAGS) myinfer.cc cmd_flags.o common.o document.o model.o accumulative_model.o sampler.o -o myinfer
+	$(CC) $(CFLAGS) infer.cc cmd_flags.o common.o document.o model.o accumulative_model.o sampler.o -o myinfer
 
 mpi_lda: mpi_lda.cc cmd_flags.o common.o document.o model.o accumulative_model.o sampler.o
 	$(MPICC) $(CFLAGS) mpi_lda.cc cmd_flags.o common.o document.o model.o accumulative_model.o sampler.o -o mpi_lda
